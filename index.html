@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Risk - Logistic Regression Interactive Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="heart-pulse-icon">❤️</div>
+                <div>
+                    <h1>Heart Disease Risk Prediction</h1>
+                    <p class="subtitle">Interactive Logistic Regression Math & Visualizer</p>
+                </div>
+            </div>
+            
+            <!-- Global Model Switcher & Presets -->
+            <div class="top-controls">
+                <div class="preset-buttons">
+                    <span class="control-label">Quick Presets:</span>
+                    <button type="button" class="btn btn-preset" onclick="loadPreset('healthy')">Healthy Patient</button>
+                    <button type="button" class="btn btn-preset" onclick="loadPreset('moderate')">Moderate Risk</button>
+                    <button type="button" class="btn btn-preset" onclick="loadPreset('high')">High Risk</button>
+                </div>
+
+                <div class="model-toggle-group">
+                    <span class="control-label">Model Strategy:</span>
+                    <div class="toggle-switch">
+                        <input type="radio" id="modelStandard" name="model_type" value="standard" checked onchange="triggerPredict()">
+                        <label for="modelStandard" title="Standard Logistic Regression (High overall accuracy, but lower recall on rare risk cases)">Standard</label>
+                        
+                        <input type="radio" id="modelBalanced" name="model_type" value="balanced" onchange="triggerPredict()">
+                        <label for="modelBalanced" title="Balanced Class Weights (Solves class imbalance, significantly boosts Recall)">Balanced</label>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="main-content">
+            <!-- Sidebar: Patient Inputs -->
+            <aside class="sidebar-card glass-panel">
+                <div class="panel-header">
+                    <h2>📋 Patient Parameters</h2>
+                    <p>Adjust parameters to see real-time probability & Z-score changes.</p>
+                </div>
+
+                <form id="predictionForm" onsubmit="event.preventDefault(); triggerPredict();">
+                    <div class="form-grid">
+                        <!-- Demographics -->
+                        <div class="form-section-title">Demographics & Habits</div>
+                        
+                        <div class="form-group">
+                            <label for="input-male">Sex</label>
+                            <select id="input-male" class="form-control" onchange="triggerPredict()">
+                                <option value="1" selected>Male</option>
+                                <option value="0">Female</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-age">Age (Years)</label>
+                            <input type="number" id="input-age" class="form-control" value="50" min="20" max="90" oninput="triggerPredict()">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-education">Education Level</label>
+                            <select id="input-education" class="form-control" onchange="triggerPredict()">
+                                <option value="1">1: High School / Some</option>
+                                <option value="2" selected>2: High School Grad</option>
+                                <option value="3">3: College / Vocational</option>
+                                <option value="4">4: College Degree +</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-currentSmoker">Current Smoker</label>
+                            <select id="input-currentSmoker" class="form-control" onchange="toggleSmoking()">
+                                <option value="1" selected>Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="cigsGroup">
+                            <label for="input-cigsPerDay">Cigarettes / Day</label>
+                            <input type="number" id="input-cigsPerDay" class="form-control" value="15" min="0" max="90" oninput="triggerPredict()">
+                        </div>
+
+                        <!-- Medical History -->
+                        <div class="form-section-title">Medical History</div>
+
+                        <div class="form-group">
+                            <label for="input-BPMeds">On BP Meds?</label>
+                            <select id="input-BPMeds" class="form-control" onchange="triggerPredict()">
+                                <option value="0" selected>No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-prevalentStroke">Prior Stroke?</label>
+                            <select id="input-prevalentStroke" class="form-control" onchange="triggerPredict()">
+                                <option value="0" selected>No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-prevalentHyp">Hypertension?</label>
+                            <select id="input-prevalentHyp" class="form-control" onchange="triggerPredict()">
+                                <option value="0" selected>No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-diabetes">Diabetic?</label>
+                            <select id="input-diabetes" class="form-control" onchange="triggerPredict()">
+                                <option value="0" selected>No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <!-- Physical Vitals & Labs -->
+                        <div class="form-section-title">Physical Vitals & Blood Work</div>
+
+                        <div class="form-group">
+                            <label for="input-sysBP">Systolic BP (sysBP)</label>
+                            <input type="number" id="input-sysBP" class="form-control" value="130" min="80" max="250" oninput="triggerPredict()">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-diaBP">Diastolic BP (diaBP)</label>
+                            <input type="number" id="input-diaBP" class="form-control" value="85" min="50" max="150" oninput="triggerPredict()">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-totChol">Total Cholesterol</label>
+                            <input type="number" id="input-totChol" class="form-control" value="230" min="100" max="600" oninput="triggerPredict()">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-BMI">BMI (kg/m²)</label>
+                            <input type="number" step="0.1" id="input-BMI" class="form-control" value="25.5" min="12" max="60" oninput="triggerPredict()">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-heartRate">Heart Rate (bpm)</label>
+                            <input type="number" id="input-heartRate" class="form-control" value="75" min="40" max="150" oninput="triggerPredict()">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-glucose">Glucose Level</label>
+                            <input type="number" id="input-glucose" class="form-control" value="82" min="40" max="400" oninput="triggerPredict()">
+                        </div>
+                    </div>
+                </form>
+            </aside>
+
+            <!-- Center/Right Results Dashboard -->
+            <section class="dashboard-area">
+                <!-- Row 1: Prediction Badge & Interactive Sigmoid Curve -->
+                <div class="dashboard-row grid-2">
+                    <!-- Result Summary Card -->
+                    <div class="glass-panel result-card" id="resultBadgeCard">
+                        <div class="panel-header">
+                            <h2>🎯 Model Prediction</h2>
+                            <span class="badge" id="strategyBadge">Standard Model</span>
+                        </div>
+
+                        <div class="probability-display">
+                            <div class="gauge-circle" id="gaugeCircle">
+                                <span class="prob-val" id="probPercent">--%</span>
+                                <span class="prob-label">Risk Probability</span>
+                            </div>
+
+                            <div class="status-summary">
+                                <h3 id="predictionText">Calculating...</h3>
+                                <p id="predictionSubtext">10-Year Coronary Heart Disease (TenYearCHD)</p>
+                                
+                                <div class="metric-mini-box">
+                                    <div>
+                                        <span class="mini-label">Calculated Z-Score:</span>
+                                        <span class="mini-val" id="zScoreVal">--</span>
+                                    </div>
+                                    <div>
+                                        <span class="mini-label">Classification Cutoff:</span>
+                                        <span class="mini-val" id="thresholdDisplayVal">0.50</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Threshold Slider -->
+                        <div class="threshold-slider-box">
+                            <div class="slider-header">
+                                <label for="thresholdSlider">Decision Threshold: <strong id="thresholdNum">0.50</strong></label>
+                                <span class="tooltip-icon" title="Adjust the probability cutoff point to classify as Risk vs No Risk">ℹ️</span>
+                            </div>
+                            <input type="range" id="thresholdSlider" min="0.10" max="0.90" step="0.05" value="0.50" oninput="updateThreshold(this.value)">
+                            <div class="slider-ticks">
+                                <span>0.1 (Strict)</span>
+                                <span>0.5 (Default)</span>
+                                <span>0.9 (Lenient)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sigmoid Curve Canvas -->
+                    <div class="glass-panel canvas-card">
+                        <div class="panel-header">
+                            <h2>📈 Interactive Sigmoid Activation</h2>
+                            <p>Visualizing \( P(Y=1) = \frac{1}{1 + e^{-z}} \)</p>
+                        </div>
+                        <div class="canvas-container">
+                            <canvas id="sigmoidCanvas" width="550" height="260"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Mathematical Mechanics Step-by-Step -->
+                <div class="dashboard-row">
+                    <div class="glass-panel math-explanation-card">
+                        <div class="panel-header">
+                            <h2>🧠 How Logistic Regression Works (Step-by-Step)</h2>
+                            <p>Demystifying the underlying linear algebra and probability mapping</p>
+                        </div>
+
+                        <div class="math-steps-grid">
+                            <!-- Step 1 -->
+                            <div class="math-step-box">
+                                <div class="step-num">Step 1</div>
+                                <h4>Feature Standardization</h4>
+                                <div class="formula-box">\( x_{scaled} = \frac{x - \mu}{\sigma} \)</div>
+                                <p>Features are centered around mean \(\mu\) and scaled by standard deviation \(\sigma\) so large numerical ranges (e.g. cholesterol) don't overpower small ones (e.g. sex).</p>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="math-step-box">
+                                <div class="step-num">Step 2</div>
+                                <h4>Linear Combination (Z-Score)</h4>
+                                <div class="formula-box">\( z = \beta_0 + \sum_{i=1}^{n} \beta_i x_{i, scaled} \)</div>
+                                <p>The model multiplies each scaled feature by its learned weight (\(\beta_i\)) and adds the intercept (\(\beta_0 = <span id="interceptVal">--</span>\)).</p>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="math-step-box">
+                                <div class="step-num">Step 3</div>
+                                <h4>Sigmoid Transformation</h4>
+                                <div class="formula-box">\( p = \frac{1}{1 + e^{-z}} \)</div>
+                                <p>Squeezes the unbounded Z-score (which can range from \(-\infty\) to \(+\infty\)) into a valid probability between 0.0 (0%) and 1.0 (100%).</p>
+                            </div>
+                        </div>
+
+                        <!-- Feature Contribution Table -->
+                        <div class="contributions-section">
+                            <div class="section-sub-header">
+                                <h3>📊 Feature Impact Breakdown for Current Patient</h3>
+                                <p>Which medical factors are increasing or decreasing this patient's risk?</p>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="contributions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Feature</th>
+                                            <th>Raw Input</th>
+                                            <th>Mean (\(\mu\))</th>
+                                            <th>Scaled (\(x_{scaled}\))</th>
+                                            <th>Model Weight (\(\beta\))</th>
+                                            <th>Risk Contribution (\(\beta \cdot x_{scaled}\))</th>
+                                            <th>Impact Direction</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="contributionsTbody">
+                                        <!-- Rendered via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: Class Imbalance & Performance Comparison -->
+                <div class="dashboard-row">
+                    <div class="glass-panel metrics-card">
+                        <div class="panel-header">
+                            <h2>⚖️ Addressing Class Imbalance & Model Performance</h2>
+                            <p>Why standard accuracy can be deceiving in medical diagnosis</p>
+                        </div>
+
+                        <div class="imbalance-banner">
+                            <div class="banner-text">
+                                💡 <strong>Framingham Dataset Insight:</strong> Out of 3,656 clean patients, 3,099 (84.8%) had <em>No Risk</em> and only 557 (15.2%) had <em>Heart Disease Risk</em>. A baseline model predicting "No Risk" for everyone achieves ~84.8% accuracy but catches <strong>0%</strong> of sick patients!
+                            </div>
+                        </div>
+
+                        <div class="metrics-comparison-grid">
+                            <!-- Standard Model Metrics -->
+                            <div class="model-metrics-box" id="standardMetricsBox">
+                                <div class="box-title">
+                                    <h4>Standard Model</h4>
+                                    <span class="tag tag-default">Default Logistic Regression</span>
+                                </div>
+                                <div class="metrics-row">
+                                    <div class="metric-pill">
+                                        <span class="m-val" id="stdAcc">--</span>
+                                        <span class="m-label">Accuracy</span>
+                                    </div>
+                                    <div class="metric-pill">
+                                        <span class="m-val" id="stdPrec">--</span>
+                                        <span class="m-label">Precision</span>
+                                    </div>
+                                    <div class="metric-pill alert-low">
+                                        <span class="m-val" id="stdRecall">--</span>
+                                        <span class="m-label">Recall (Sensitivity)</span>
+                                    </div>
+                                    <div class="metric-pill">
+                                        <span class="m-val" id="stdAuc">--</span>
+                                        <span class="m-label">ROC AUC</span>
+                                    </div>
+                                </div>
+                                <p class="box-desc"><strong>High Accuracy, Low Recall:</strong> Misses many high-risk patients because the loss function prioritizes majority class accuracy.</p>
+                            </div>
+
+                            <!-- Balanced Model Metrics -->
+                            <div class="model-metrics-box highlight-box" id="balancedMetricsBox">
+                                <div class="box-title">
+                                    <h4>Balanced Strategy</h4>
+                                    <span class="tag tag-success">class_weight='balanced'</span>
+                                </div>
+                                <div class="metrics-row">
+                                    <div class="metric-pill">
+                                        <span class="m-val" id="balAcc">--</span>
+                                        <span class="m-label">Accuracy</span>
+                                    </div>
+                                    <div class="metric-pill">
+                                        <span class="m-val" id="balPrec">--</span>
+                                        <span class="m-label">Precision</span>
+                                    </div>
+                                    <div class="metric-pill alert-high">
+                                        <span class="m-val" id="balRecall">--</span>
+                                        <span class="m-label">Recall (Sensitivity)</span>
+                                    </div>
+                                    <div class="metric-pill">
+                                        <span class="m-val" id="balAuc">--</span>
+                                        <span class="m-label">ROC AUC</span>
+                                    </div>
+                                </div>
+                                <p class="box-desc"><strong>High Recall for Medical Safety:</strong> Penalizes misclassifying rare heart disease cases, significantly boosting sensitivity!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MathJax for rendering equations -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
